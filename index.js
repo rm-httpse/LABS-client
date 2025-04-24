@@ -14,13 +14,8 @@ const proxyPort = process.env.SOCKS5_PROXY_PORT || 1080
 // const proxyUsername = process.env.PROXY_USERNAME
 // const proxyPassword = process.env.PROXY_PASSWORD
 const maxTries = process.env.MAX_TRIES || 10;
-let proxyIp = null;
-let IP = null;
-let interf = null;
-let connected = false;
-let canceled = false
-childTries = 0;
 
+let [proxyIp, IP, interf, connected, canceled, childTries] = [null, null, null, false, false, 0]
 const getActiveInterface = async () => {
   try {
     const { stdout } = await execAsync('route get default')
@@ -34,11 +29,13 @@ const getActiveInterface = async () => {
 
 const configureProxy = async () => {
   try {
-    await execAsync(`networksetup -setsocksfirewallproxy Wi-Fi ${ip} ${port}`)
+    await execAsync(`networksetup -setsocksfirewallproxy Wi-Fi ${IP} ${proxyPort}`)
     await execAsync(`networksetup -setsocksfirewallproxystate Wi-Fi on`)
-    console.log(`✅ Proxy configurado: ${ip}:${port}`)
+    console.log(`✅ Proxy configurado: ${IP}:${proxyPort}`)
+    connected = true;
   } catch (err) {
     console.error('❌ Error configurando el proxy:', err.message)
+    await execAsync('sleep 1');
   }
 }
 
@@ -48,6 +45,7 @@ const removeProxy = async () => {
     console.log('🧹 Proxy eliminado del sistema')
   } catch (err) {
     console.error('❌ Error removiendo el proxy:', err.message)
+    await execAsync('sleep 1');
   }
 }
 
@@ -76,7 +74,7 @@ while(!IP) {
     }
   } catch (error) {
     console.error('Error getting provider IP:', error)
-    execSync('sleep 1');
+    await execAsync('sleep 1');
   }
 }
 
@@ -85,7 +83,7 @@ while (!interf) {
     interf = await getActiveInterface();
   } catch(e) {
     console.error(e)
-    execSync('sleep 1');
+    await execAsync('sleep 1');
   }
 }
 
@@ -94,7 +92,7 @@ while(!connected && !canceled) {
     await configureProxy();
   } catch(e) {
     console.error(e)
-    execSync('sleep 1');
+    await execAsync('sleep 1');
   }
 }
 
